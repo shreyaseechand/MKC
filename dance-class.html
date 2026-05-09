@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MKC Advance Dance Class</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #fff;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+header h1 { font-size: 1.25rem; font-weight: 700; color: #111827; }
+
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ── VIDEO COL ── */
+.video-col {
+  flex: 1;
+  padding: 20px 20px 10px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  background: #000;
+  flex-shrink: 0;
+}
+.video-wrapper::after { content: ''; display: block; padding-top: 56.25%; }
+.video-wrapper iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+
+/* ── TIMELINE STRIP ── */
+.timeline-strip {
+  position: relative;
+  flex-shrink: 0;
+  height: 44px;
+  margin-top: 8px;
+  padding: 0 10px;
+}
+
+.tl-track {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 20px;           /* vertically centred in 44px strip */
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.tl-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 2px;
+  width: 0%;
+  pointer-events: none;
+  transition: width 0.25s linear;
+}
+
+/* playhead dot */
+.tl-head {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #3b82f6;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  left: 0%;
+  transition: left 0.25s linear;
+}
+
+/* ── MARKERS ── */
+.tl-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  z-index: 10;
+}
+
+.tl-icon {
+  width: 18px;
+  height: 18px;
+  color: #9ca3af;
+  display: block;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.tl-marker:hover .tl-icon { color: #3b82f6; transform: scale(1.3); }
+.tl-marker.active .tl-icon { color: #2563eb; transform: scale(1.3); }
+
+/* ── TOOLTIP ── */
+.tl-tooltip {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.93);
+  color: #f9fafb;
+  border-radius: 8px;
+  padding: 9px 12px;
+  min-width: 190px;
+  max-width: 260px;
+  font-size: 0.77rem;
+  line-height: 1.5;
+  display: none;
+  pointer-events: none;
+  white-space: normal;
+  z-index: 50;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+}
+.tl-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: rgba(17,24,39,0.93);
+  border-bottom: 0;
+}
+/* edge-aware tooltip alignment */
+.tl-marker.tip-right .tl-tooltip { left: -4px; transform: none; }
+.tl-marker.tip-right .tl-tooltip::after { left: 13px; transform: none; }
+.tl-marker.tip-left  .tl-tooltip { left: auto; right: -4px; transform: none; }
+.tl-marker.tip-left  .tl-tooltip::after { left: auto; right: 13px; transform: none; }
+
+.tl-marker:hover .tl-tooltip { display: block; }
+
+.tt-ts { font-size: 0.68rem; font-weight: 700; color: #93c5fd; margin-bottom: 4px; }
+
+/* ── COMMENTS SIDEBAR ── */
+.comments-col {
+  width: 340px;
+  min-width: 280px;
+  border-left: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.search-wrap { padding: 14px 16px 10px; }
+.search-input {
+  width: 100%;
+  padding: 9px 16px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 24px;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: #111827;
+}
+.search-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+
+.count-bar { padding: 0 16px 10px; font-size: 0.82rem; font-weight: 600; color: #6b7280; }
+.comments-scroll { flex: 1; overflow-y: auto; }
+
+.section-hdr {
+  padding: 6px 16px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  background: #f9fafb;
+  border-top: 1px solid #f3f4f6;
+  border-bottom: 1px solid #f3f4f6;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.comment-item {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.15s;
+}
+.comment-item:hover { background: #f0f9ff; }
+.comment-item.active {
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  padding-left: 13px;
+}
+
+.avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.62rem;
+  flex-shrink: 0;
+}
+.cbody { flex: 1; min-width: 0; }
+.cmeta { display: flex; align-items: baseline; gap: 7px; margin-bottom: 3px; flex-wrap: wrap; }
+.cname { font-weight: 600; font-size: 0.85rem; color: #111827; }
+.cts { font-size: 0.77rem; color: #3b82f6; font-weight: 500; cursor: pointer; }
+.cts:hover { text-decoration: underline; }
+.ctext { font-size: 0.81rem; color: #374151; line-height: 1.52; }
+.reply { font-size: 0.75rem; color: #9ca3af; margin-top: 4px; display: block; }
+
+.note-card {
+  margin: 8px 16px;
+  padding: 10px 12px;
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  border-radius: 4px;
+  font-size: 0.8rem; color: #374151; line-height: 1.55;
+}
+.note-card strong { color: #b45309; display: block; margin-bottom: 3px; }
+
+.no-results { padding: 40px 20px; text-align: center; color: #9ca3af; font-size: 0.875rem; }
+mark { background: #fef08a; border-radius: 2px; padding: 0 1px; }
+
+/* Timeline search filter states */
+.tl-marker.dim { opacity: 0.15; pointer-events: none; }
+.tl-marker.match .tl-icon { color: #2563eb; filter: drop-shadow(0 0 3px rgba(59,130,246,0.6)); }
+</style>
+</head>
+<body>
+
+<header><h1>MKC Advance Dance Class</h1></header>
+
+<div class="layout">
+  <div class="video-col">
+    <div class="video-wrapper">
+      <iframe
+        id="yt-player"
+        src="https://www.youtube.com/embed/AQ3lzsJd5E8?si=8U3xrkj0NTZUx1M5&enablejsapi=1"
+        title="YouTube video player"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen>
+      </iframe>
+    </div>
+
+    <!-- Comment timeline -->
+    <div class="timeline-strip">
+      <div class="tl-track" id="tlTrack">
+        <div class="tl-fill" id="tlFill"></div>
+        <div class="tl-head" id="tlHead"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="comments-col">
+    <div class="search-wrap">
+      <input class="search-input" id="searchInput" type="text" placeholder="Search name etc" />
+    </div>
+    <div class="count-bar" id="countBar"></div>
+    <div class="comments-scroll" id="commentsList"></div>
+  </div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const COMMENTS = [
+  // Top Tucker
+  {id:1,  sec:"Top Tucker", start:10,  ts:"0:10",  text:"Nithya, moving your arms too much.", names:["Nithya"]},
+  {id:2,  sec:"Top Tucker", start:13,  ts:"0:13",  text:"Extend your arms all the way.", names:[]},
+  {id:3,  sec:"Top Tucker", start:19,  ts:"0:19",  text:"Let's fix the footwork to 2nd position.", names:[]},
+  {id:4,  sec:"Top Tucker", start:20,  ts:"0:20",  text:"Vaishnavi, don't use both arms to press, it is one hand at a time.", names:["Vaishnavi"]},
+  {id:5,  sec:"Top Tucker", start:22,  ts:"0:22",  text:"Nithya, rushing a lot. Ashwini, extend your arms all the way.", names:["Nithya","Ashwini"]},
+  {id:6,  sec:"Top Tucker", start:26,  ts:"0:26",  text:"Amruta, use your whole forearm for 'bless mama'.", names:["Amruta"]},
+  {id:7,  sec:"Top Tucker", start:34,  ts:"0:34",  text:"Some of you have choreographed your move and it looks good. Some of you haven't, please fix it by next class.", names:[]},
+  {id:8,  sec:"Top Tucker", start:36,  ts:"0:36",  text:"Kruthika, please work on this.", names:["Kruthika"]},
+  {id:9,  sec:"Top Tucker", start:41,  ts:"0:41",  text:"Slow down, you all are rushing a lot.", names:[]},
+  {id:10, sec:"Top Tucker", start:44,  ts:"0:44",  text:"Finish the last count.", names:[]},
+  {id:11, sec:"Top Tucker", start:49,  ts:"0:49",  text:"Find more clarity in the right hand.", names:[]},
+  {id:12, sec:"Top Tucker", start:51,  ts:"0:51",  text:"Isha, missing the first hand movement. Sanskriti, arm movement is wrong.", names:["Isha","Sanskriti"]},
+  {id:13, sec:"Top Tucker", start:57,  ts:"0:57",  text:"Make sure your feet are coming in first position as you jump back.", names:[]},
+  {id:14, sec:"Top Tucker", start:65,  ts:"1:05",  text:"For 'roses' partner on the right side should extend their arms all the way.", names:[]},
+  {id:15, sec:"Top Tucker", start:69,  ts:"1:09",  text:"Lean forward a bit more for 'process'. Keep your feet together for that part.", names:[]},
+  {id:16, sec:"Top Tucker", start:70,  ts:"1:10",  text:"Nithya, doing the wrong footwork.", names:["Nithya"]},
+  {id:17, sec:"Top Tucker", start:78,  ts:"1:18",  text:"Amrita, don't move your hands.", names:["Amrita"]},
+  {id:18, sec:"Top Tucker", start:79,  ts:"1:19",  text:"Nithya, hands should be underneath the chin.", names:["Nithya"]},
+  {id:19, sec:"Top Tucker", start:80,  ts:"1:20",  text:"Amrita, wrist action should be the opposite way.", names:["Amrita"]},
+  {id:20, sec:"Top Tucker", start:81,  ts:"1:21",  text:"For 'sweety' complete the movement. A lot of you are cutting the movement short on the right side. Joshwini, doing the wrong movement.", names:["Joshwini"]},
+  {id:21, sec:"Top Tucker", start:83,  ts:"1:23",  text:"Isha, Nithya, Ashiwini & Shreyasee, hands are on the hips.", names:["Isha","Nithya","Ashiwini","Shreyasee"]},
+  {id:22, sec:"Top Tucker", start:84,  ts:"1:24",  text:"Nithya, not doing the footwork.", names:["Nithya"]},
+  {id:23, sec:"Top Tucker", start:85,  ts:"1:25",  text:"Kruthika, Mamta, extend your arms. Amruta, Joshwini, your angles are off. Amandeep, feet should be together.", names:["Kruthika","Mamta","Amruta","Joshwini","Amandeep"]},
+  {id:24, sec:"Top Tucker", start:86,  ts:"1:26",  text:"Kruthika, using the wrong leg for the dip.", names:["Kruthika"]},
+  {id:25, sec:"Top Tucker", start:93,  ts:"1:33",  text:"Knees should go in and out.", names:[]},
+  {id:26, sec:"Top Tucker", start:95,  ts:"1:35",  text:"The left hand should be on the head, and the right hand on the hip.", names:[]},
+  {id:27, sec:"Top Tucker", start:97,  ts:"1:37",  text:"Bigger circles with your arms.", names:[]},
+  {id:28, sec:"Top Tucker", start:100, ts:"1:40",  text:"Please work on your pose. If you are doing something similar to the person next to you, do something different. Add different levels, dimensions and shapes.", names:[]},
+  {id:29, sec:"Top Tucker", start:106, ts:"Note",  text:"Overall for this section, we need to work on clarity of movements as well as completing each movement. Find those end points every time.", names:[], isNote:true},
+  // Bijuria
+  {id:30, sec:"Bijuria", start:111, ts:"1:51", text:"Mamta adding extra hand movement.", names:["Mamta"]},
+  {id:31, sec:"Bijuria", start:115, ts:"1:55", text:"Vaishnavi, Sankriti doing the wrong arms. Amandeep, starting the arms on the wrong side. Ashwini, bring the elbows up. Everyone, finish the last hand.", names:["Vaishnavi","Sankriti","Amandeep","Ashwini"]},
+  {id:32, sec:"Bijuria", start:117, ts:"1:57", text:"Amrita, Amruta back should be straight and facing forward.", names:["Amrita","Amruta"]},
+  {id:33, sec:"Bijuria", start:121, ts:"2:01", text:"Again, complete the movement.", names:[]},
+  {id:34, sec:"Bijuria", start:122, ts:"2:02", text:"Utharashree, Ashwini doing the wrong timing of the hands.", names:["Utharashree","Ashwini"]},
+  {id:35, sec:"Bijuria", start:126, ts:"2:06", text:"Pavithra, skipping the first move. You need to move faster with the dips and end up facing forward.", names:["Pavithra"]},
+  {id:36, sec:"Bijuria", start:127, ts:"2:07", text:"Pavithra, not extending arms enough.", names:["Pavithra"]},
+  {id:37, sec:"Bijuria", start:130, ts:"2:10", text:"Ashwini don't lean forward for the shimmy.", names:["Ashwini"]},
+  {id:38, sec:"Bijuria", start:132, ts:"2:12", text:"Make sure the arm movements are sharp. The shapes are still off for some of you, please watch yourself and fix it.", names:[]},
+  {id:39, sec:"Bijuria", start:138, ts:"2:18", text:"Amandeep, finish the arm movement.", names:["Amandeep"]},
+  {id:40, sec:"Bijuria", start:156, ts:"2:36", text:"Finish the last leg out.", names:[]},
+  {id:41, sec:"Bijuria", start:158, ts:"2:38", text:"Whistle move is twice.", names:[]},
+  {id:42, sec:"Bijuria", start:164, ts:"2:44", text:"Nithya, not doing the footwork at all.", names:["Nithya"]},
+];
+
+// Chat icon SVG
+const ICON_SVG = `<svg class="tl-icon" viewBox="0 0 20 20" fill="currentColor">
+  <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"/>
+</svg>`;
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let player       = null;
+let tickStarted  = false;
+let hlTimer      = null;
+let lastActiveId = null;
+let DURATION     = 169; // updated from player on load
+
+// ── YOUTUBE ──────────────────────────────────────────────────────────────────
+function startTick() {
+  if (tickStarted) return;
+  tickStarted = true;
+  setInterval(tick, 300);
+}
+
+window.onYouTubeIframeAPIReady = () => {
+  player = new YT.Player('yt-player', {
+    events: {
+      onReady: e => {
+        const d = e.target.getDuration();
+        if (d > 0) { DURATION = d; buildTimeline(); }
+        startTick();
+      },
+      onStateChange: startTick
+    }
+  });
+  setTimeout(startTick, 3000); // fallback
+};
+
+const seekTo = s => {
+  if (player && player.seekTo) { player.seekTo(s, true); player.playVideo(); }
+};
+
+// ── TIMELINE ─────────────────────────────────────────────────────────────────
+function buildTimeline() {
+  const track = document.getElementById('tlTrack');
+  track.querySelectorAll('.tl-marker').forEach(el => el.remove());
+
+  COMMENTS.filter(c => !c.isNote).forEach(c => {
+    const pct = Math.min(97, Math.max(2, (c.start / DURATION) * 100));
+    const marker = document.createElement('div');
+    marker.className = 'tl-marker';
+    marker.id = `mk${c.id}`;
+    marker.style.left = pct + '%';
+
+    // Edge-aware tooltip
+    if (pct < 16) marker.classList.add('tip-right');
+    else if (pct > 84) marker.classList.add('tip-left');
+
+    const txt = c.text.length > 110 ? c.text.slice(0, 107) + '…' : c.text;
+    marker.innerHTML = `${ICON_SVG}
+      <div class="tl-tooltip">
+        <div class="tt-ts">${c.ts}</div>
+        <div>${txt}</div>
+      </div>`;
+
+    marker.addEventListener('click', e => {
+      e.stopPropagation();
+      seekTo(c.start);
+      highlightComment(c.id);
+    });
+
+    track.appendChild(marker);
+  });
+}
+
+// Click anywhere on the track to seek
+document.getElementById('tlTrack').addEventListener('click', e => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  seekTo(pct * DURATION);
+});
+
+// ── TICK ─────────────────────────────────────────────────────────────────────
+function tick() {
+  if (!player || typeof player.getCurrentTime !== 'function') return;
+  let t;
+  try { t = player.getCurrentTime(); } catch(e) { return; }
+  if (typeof t !== 'number') return;
+
+  // Progress bar + playhead
+  const pct = DURATION > 0 ? (t / DURATION) * 100 : 0;
+  document.getElementById('tlFill').style.width = pct + '%';
+  document.getElementById('tlHead').style.left  = pct + '%';
+
+  // Active marker: most recent comment that started within the last 4s
+  const active = COMMENTS
+    .filter(c => !c.isNote && t >= c.start && t < c.start + 4)
+    .sort((a, b) => b.start - a.start)[0];
+
+  document.querySelectorAll('.tl-marker.active').forEach(el => el.classList.remove('active'));
+
+  if (active) {
+    document.getElementById(`mk${active.id}`)?.classList.add('active');
+    if (active.id !== lastActiveId) {
+      lastActiveId = active.id;
+      silentHighlight(active.id);
+    }
+  } else {
+    lastActiveId = null;
+    // Remove comment highlight when nothing is active
+    document.querySelectorAll('.comment-item.active').forEach(el => el.classList.remove('active'));
+  }
+}
+
+// ── COMMENT PANEL ────────────────────────────────────────────────────────────
+function render(q = '') {
+  const ql    = q.toLowerCase().trim();
+  const list  = document.getElementById('commentsList');
+  const count = document.getElementById('countBar');
+  list.innerHTML = '';
+
+  const shown = ql
+    ? COMMENTS.filter(c =>
+        c.text.toLowerCase().includes(ql) ||
+        c.names.some(n => n.toLowerCase().includes(ql)) ||
+        c.ts.includes(ql))
+    : COMMENTS;
+
+  const n = shown.filter(c => !c.isNote).length;
+  count.textContent = n + ' comment' + (n !== 1 ? 's' : '');
+
+  if (shown.length === 0) {
+    list.innerHTML = `<div class="no-results">No comments match "${q}"</div>`;
+    return;
+  }
+
+  let lastSec = '';
+  shown.forEach(c => {
+    if (c.sec !== lastSec) {
+      const h = document.createElement('div');
+      h.className = 'section-hdr';
+      h.textContent = c.sec;
+      list.appendChild(h);
+      lastSec = c.sec;
+    }
+
+    if (c.isNote) {
+      const note = document.createElement('div');
+      note.className = 'note-card';
+      note.id = `cm${c.id}`;
+      note.innerHTML = `<strong>Overall Note</strong>${hl(c.text, ql)}`;
+      list.appendChild(note);
+      return;
+    }
+
+    const el = document.createElement('div');
+    el.className = 'comment-item';
+    el.id = `cm${c.id}`;
+    el.innerHTML = `
+      <div class="avatar">INS</div>
+      <div class="cbody">
+        <div class="cmeta">
+          <span class="cname">Instructor</span>
+          <span class="cts">${c.ts}</span>
+        </div>
+        <div class="ctext">${hl(c.text, ql)}</div>
+        <span class="reply">Reply</span>
+      </div>`;
+    el.querySelector('.cts').addEventListener('click', e => { e.stopPropagation(); seekTo(c.start); });
+    el.addEventListener('click', () => { seekTo(c.start); highlightComment(c.id); });
+    list.appendChild(el);
+  });
+}
+
+function hl(text, q) {
+  if (!q) return text;
+  const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp(`(${esc})`, 'gi'), '<mark>$1</mark>');
+}
+
+// User-triggered: scroll into view
+function highlightComment(id) {
+  document.querySelectorAll('.comment-item.active').forEach(el => el.classList.remove('active'));
+  clearTimeout(hlTimer);
+  const el = document.getElementById(`cm${id}`);
+  if (!el) return;
+  el.classList.add('active');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  hlTimer = setTimeout(() => el.classList.remove('active'), 3500);
+}
+
+// Auto-triggered while playing: scroll only if needed
+function silentHighlight(id) {
+  document.querySelectorAll('.comment-item.active').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById(`cm${id}`);
+  if (!el) return;
+  el.classList.add('active');
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── TIMELINE FILTER ──────────────────────────────────────────────────────────
+function filterTimeline(q) {
+  const ql = q.toLowerCase().trim();
+  COMMENTS.filter(c => !c.isNote).forEach(c => {
+    const marker = document.getElementById(`mk${c.id}`);
+    if (!marker) return;
+    if (!ql) {
+      // No search: restore all markers
+      marker.classList.remove('dim', 'match');
+    } else {
+      const matches =
+        c.text.toLowerCase().includes(ql) ||
+        c.names.some(n => n.toLowerCase().includes(ql)) ||
+        c.ts.includes(ql);
+      marker.classList.toggle('dim',   !matches);
+      marker.classList.toggle('match',  matches);
+    }
+  });
+}
+
+// ── SEARCH ───────────────────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', e => {
+  render(e.target.value);
+  filterTimeline(e.target.value);
+});
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+buildTimeline();
+render();
+
+const ytScript = document.createElement('script');
+ytScript.src = 'https://www.youtube.com/iframe_api';
+document.head.appendChild(ytScript);
+</script>
+</body>
+</html>
