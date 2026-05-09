@@ -235,6 +235,28 @@ mark { background: #fef08a; border-radius: 2px; padding: 0 1px; }
 /* Timeline search filter states */
 .tl-marker.dim { opacity: 0.15; pointer-events: none; }
 .tl-marker.match .tl-icon { color: #2563eb; filter: drop-shadow(0 0 3px rgba(59,130,246,0.6)); }
+
+/* RESPONSIVE MOBILE */
+@media (max-width: 900px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .video-col {
+    flex: 1;
+    padding: 20px 20px 0;
+  }
+
+  .comments-col {
+    width: 100%;
+    min-width: auto;
+    border-left: none;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 0;
+    padding: 0;
+    max-height: 50vh;
+  }
+}
 </style>
 </head>
 <body>
