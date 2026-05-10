@@ -110,7 +110,7 @@ header h1 { font-size: 1.25rem; font-weight: 700; color: #111827; }
 /* ── TOOLTIP ── */
 .tl-tooltip {
   position: absolute;
-  bottom: calc(100% + 14px);
+  top: calc(100% + 14px);
   left: 50%;
   transform: translateX(-50%);
   background: rgba(17, 24, 39, 0.93);
@@ -130,18 +130,18 @@ header h1 { font-size: 1.25rem; font-weight: 700; color: #111827; }
 .tl-tooltip::after {
   content: '';
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
   border: 7px solid transparent;
-  border-top-color: rgba(17,24,39,0.93);
-  border-bottom: 0;
+  border-bottom-color: rgba(17,24,39,0.93);
+  border-top: 0;
 }
 /* edge-aware tooltip alignment */
 .tl-marker.tip-right .tl-tooltip { left: -4px; transform: none; }
-.tl-marker.tip-right .tl-tooltip::after { left: 13px; transform: none; }
+.tl-marker.tip-right .tl-tooltip::after { left: 13px; transform: none; bottom: 100%; }
 .tl-marker.tip-left  .tl-tooltip { left: auto; right: -4px; transform: none; }
-.tl-marker.tip-left  .tl-tooltip::after { left: auto; right: 13px; transform: none; }
+.tl-marker.tip-left  .tl-tooltip::after { left: auto; right: 13px; transform: none; bottom: 100%; }
 
 .tl-marker:hover .tl-tooltip,
 .tl-marker.active .tl-tooltip { display: block; }
